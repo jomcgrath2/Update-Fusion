@@ -1,0 +1,129 @@
+var tableIDFusion = '2178714' // Add the table ID of the fusion table here
+var rangeNameUpdate = 'Fusion' //the name of the range used in the program
+    
+//create button
+function onOpen() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var menuEntries = [ {name: "Update Fusion Table", functionName: "updateFusion"}, 
+                      {name: "Change Email Information", functionName: "fixEmail"},
+                      {name: "Change Range of Data to be Sent (Include Headers)", functionName: "setRangeFusion"}];
+  ss.addMenu("Update Fusion", menuEntries);
+}
+
+//main function
+function updateFusion() {
+  var email = UserProperties.getProperty('email'); //gets the user property 'email' out of project properties 
+  var password = UserProperties.getProperty('password'); //gets the user property 'password' out of project properties
+  //if either email or password is not saved in project properties this will store them there
+  if (email === null || password === null) {
+    email = Browser.inputBox('Enter email'); //browser box to input email
+    password = Browser.inputBox('Enter password'); //browser box to input password
+    UserProperties.setProperty('email',email); //sets email as a user property called 'email'
+    UserProperties.setProperty('password', password); //sets password as a user property called 'password'
+  } else {
+    email = UserProperties.getProperty('email'); //gets user property 'email' out of project properties MAY BE REMOVED
+    password = UserProperties.getProperty('password'); //gets the user property 'password' out of project properties MAY BE REMOVED
+  }
+  var authToken = getGAauthenticationToken(email,password); //call getGAauthenticationToken send email and password infomation
+  deleteData(authToken, tableIDFusion); //calls delete data sends authToken and tableID
+  var updateMsg = updateData(authToken, tableIDFusion); //call updateData send authentication token and the tableID
+  var updatedRowsCount = updateMsg.split(/\n/).length - 2; //counts the number of rows sent to fusion
+  SpreadsheetApp.getActiveSpreadsheet().toast("Updated " + updatedRowsCount + " rows in the Fusion Table", "Fusion Tables Update", 5) //browserbox confirmation that info has been sent 
+}
+
+//Google Authentication API this is taken directly from the google fusion api website
+function getGAauthenticationToken(email, password) {
+  password = encodeURIComponent(password);
+  var response = UrlFetchApp.fetch("https://www.google.com/accounts/ClientLogin", {
+    method: "post",
+    payload: "accountType=GOOGLE&Email=" + email + "&Passwd=" + password + "&service=fusiontables&Source=testing"
+  });
+  var responseStr = response.getContentText();
+  responseStr = responseStr.slice(responseStr.search("Auth=") + 5, responseStr.length);
+  responseStr = responseStr.replace(/\n/g, "");
+  return responseStr;
+}
+
+//query fusion API post
+function queryFusionTables(authToken, query) {
+  var URL = "http://www.google.com/fusiontables/api/query"; //location to send the infomation to
+  //sends the the authentication and the query in url format
+  var response = UrlFetchApp.fetch(URL, {
+    method: "post",
+    headers: {
+      "Authorization": "GoogleLogin auth=" + authToken,
+    },
+    payload: "sql=" + query
+  });
+  return response.getContentText();
+}
+
+//delete old data in fusion table
+function deleteData(authToken, tableID) {
+  var query = encodeURIComponent("DELETE FROM " + tableID); //encodes delete info into a url format
+  return queryFusionTables(authToken, query); //returns it to queryFusion Tables
+}
+
+//this puts all the current information in the spreadsheet into a query
+function updateData(authToken, tableID) {
+  //find sheets with ranges that will be sent
+  var ss = SpreadsheetApp.getActiveSpreadsheet();  //gets the active spreadsheet
+  var sheets = ss.getSheets(); //gets all of the sheets in the spreadshset
+  var data = new Array(); //creates a new array where all the data will be housed
+  //add values from each sheet range to the data
+  for( var i in sheets ) {
+    var sheetName = sheets[i].getName().replace(/ /g, "")  //gets the name fo the sheet, removes the spaces to prevent an error when it is called
+    var range = ss.getRangeByName(rangeNameUpdate + sheetName);  //combines the sheet name and the range Prepend and gets that range
+    //checks if the range exists and if it does it adds it to the data array
+    if (range != null) {
+      var rangeData = range.getValues(); //gets the values in the range
+      if (i>0) {
+        rangeData.splice(0, 1)  //if this is not the first sheet the headers are removed so that they arent input as actual values
+      }
+      data = data.concat(rangeData) //add the new rangedata to the bottom of the data array
+    }
+  }
+  //change array to string and remove apostrophe
+  var dataString = Utilities.jsonStringify(data);  //turns the data array into a string
+  dataString = dataString.replace(/'/g, "\\'"); //removes apostrophes from the stings and replaces them with \' which wont break the code
+  data = Utilities.jsonParse(dataString); //turns the data string into an array again
+  //define headers and prepend and create query
+  var headers = data[0]; //defines the headers as the first row in the data array
+  var queryPrepend = "INSERT INTO " + tableID + " (" + "\'" +headers.join("\',\'") + "\'" + ") VALUES ('"; //creates the prepend for the query
+  var query = ""; //creates the string where the query will be saved
+
+  for (var i = 1; i < data.length; ++i) {
+    if (typeof(data[i][0]) == "string" && data[i][0] == "") {  //if the first column is empty continue will jump to the next i value instead going further
+      continue;
+    }
+    query += queryPrepend + data[i].join("','") + "'); "; //combines the data with the prepends and adds it to the query string
+  }
+  return queryFusionTables(authToken, encodeURIComponent(query));
+}
+
+//change email if needed
+function fixEmail() {
+   var decision = Browser.msgBox("WARNING", "Are you sure you want to change your email?", Browser.Buttons.YES_NO);  //confirmation that you want to change email
+   if (decision == 'yes'){
+     var email = Browser.inputBox('Enter email');  //input new email
+     var password = Browser.inputBox('Enter password');  //input new password
+     UserProperties.setProperty('email',email);  //set new email in user properties in the Project Properties
+     UserProperties.setProperty('password', password); //set new password in user properties in the Project Properties
+   }
+}
+
+//set range
+function setRangeFusion() {
+   var decision = Browser.msgBox("WARNING", "Are you sure you want to change the Update Fusion Range?", Browser.Buttons.YES_NO); //confirmation that you want to change the range
+   if (decision == 'yes'){
+     var ss = SpreadsheetApp.getActiveSpreadsheet(); //get the active spreadsheet
+     var sheetName = ss.getActiveSheet().getName().replace(/ /g, ""); //get the active sheet name and removes the spaces in the name
+     var check = ss.getRangeByName(rangeNameUpdate + sheetName); //get the range by name (combined the range prepend and the sheetname
+         if (check != null) {
+           ss.removeNamedRange(rangeNameUpdate + sheetName);  //if the range exists delete it
+         }
+     var range = SpreadsheetApp.getActiveRange(); //gets range current selected
+     ss.setNamedRange(rangeNameUpdate + sheetName, range);  //set current range to the range prepend and sheet name
+     Browser.msgBox("WARNING", "The range \'" + rangeNameUpdate + sheetName + "\' used to send data to Fusion has been changed.", Browser.Buttons.OK); //confirmation that the range has been changed
+   }
+}
