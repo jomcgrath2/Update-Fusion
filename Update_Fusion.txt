@@ -109,15 +109,21 @@ function cellEmpty(cellData) {
 }
 
 function fixEmail() {
-   var email = Browser.inputBox('Enter email');
-   var password = Browser.inputBox('Enter password');
-   UserProperties.setProperty('email',email);
-   UserProperties.setProperty('password', password);
+   var decision = Browser.msgBox("WARNING", "Are you sure you want to chage your email?", Browser.Buttons.YES_NO);
+   if (decision == 'yes'){
+     var email = Browser.inputBox('Enter email');
+     var password = Browser.inputBox('Enter password');
+     UserProperties.setProperty('email',email);
+     UserProperties.setProperty('password', password);
+   }
 }
 
 function setRange() {
-   var ss = SpreadsheetApp.getActiveSpreadsheet();
-   var range = SpreadsheetApp.getActiveRange()
-   ss.setNamedRange("nonheaders", range);
-   Browser.msgBox("WARNING", "The range 'nonheaders' used to send data to Fusion has been changed.", Browser.Buttons.OK);
+   var decision = Browser.msgBox("WARNING", "Are you sure you want to chage the Update Fusion Range?", Browser.Buttons.YES_NO);
+   if (decision == 'yes'){
+     var ss = SpreadsheetApp.getActiveSpreadsheet();
+     var range = SpreadsheetApp.getActiveRange()
+     ss.setNamedRange("nonheaders", range);
+     Browser.msgBox("WARNING", "The range 'nonheaders' used to send data to Fusion has been changed.", Browser.Buttons.OK);
+   }
 }
