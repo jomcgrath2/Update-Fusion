@@ -1,4 +1,4 @@
-This code is a workaround to allow data in a spreadsheet to update a fusion table.  In order to do this the code deletes all the data that was previously in the fusion table then sends all of the data currently in the spreadsheet to the fusion table.
+This code is a workaround to allow data in a spreadsheet to update a fusion table.  In order to do this the code deletes all the data that was previously in the fusion table then sends all of the data currently in the selected range to the fusion table.
 
 Implementation Procedure:
 1.  Open the Spreadsheet that the code will be placed in.
