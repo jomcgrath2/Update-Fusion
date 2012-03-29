@@ -1,13 +1,15 @@
+var tableID = '2178714' // Add the table ID of the fusion table here
+var sheetNumber = 1 //Sheet number goes here (the first sheet is number 1 second is number 2 etc.)
+
 function onOpen() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var menuEntries = [ {name: "Update Fusion Table", functionName: "updateFusion"}, 
                       {name: "Change Email Information", functionName: "fixEmail"},
-                      {name: "Change Range of Data to be Sent (RANGE STARTS JUST BELOW HEADERS)", functionName: "setRange"}];
+                      {name: "Change Range of Data to be Sent" + "\r\n" + "(RANGE STARTS JUST BELOW HEADERS)", functionName: "setRange"}];
   ss.addMenu("Fusion Tables", menuEntries);
 }
 
 function updateFusion() {
-  var tableID = '2178714' // Add the table ID of the fusion table here
   var email = UserProperties.getProperty('email');
   var password = UserProperties.getProperty('password');
 
@@ -66,7 +68,7 @@ function updateData(authToken, tableID) {
 }
 
 function constructQuery(ss, range, tableID, columnHeadersRowIndex) {
-  var sheet = ss.getSheets()[0];
+  var sheet = ss.getSheets()[sheetNumber - 1];
   var columnHeadersRowIndex = columnHeadersRowIndex || range.getRowIndex() - 1;
   var numColumns = range.getEndColumn() - range.getColumn() + 1;
   var headersRange = sheet.getRange(columnHeadersRowIndex, range.getColumn(), 1, numColumns);
