@@ -1,191 +1,91 @@
 function onOpen() {
 
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-
   var menuEntries = [ {name: "Update Fusion Table", functionName: "updateFusion"}, 
-
-                      {name: "Change Email Information", functionName: "fixEmail"} ];
-
+                      {name: "Change Email Information", functionName: "fixEmail"},
+                      {name: "Change Named Range", functionName: "setRange"}];
   ss.addMenu("Fusion Tables", menuEntries);
-
 }
-
-
-
 function updateFusion() {
-
-  var tableID = '2178714' // Add the table ID of the fusion table here
-
+  var tableID = '2510993' // Add the table ID of the fusion table here
   var email = UserProperties.getProperty('email');
-
   var password = UserProperties.getProperty('password');
-
-
-
   if (email === null || password === null) {
-
     email = Browser.inputBox('Enter email');
-
     password = Browser.inputBox('Enter password');
-
     UserProperties.setProperty('email',email);
-
     UserProperties.setProperty('password', password);
-
   } else {
-
     email = UserProperties.getProperty('email');
-
     password = UserProperties.getProperty('password');
-
   }
-
   var authToken = getGAauthenticationToken(email,password);
-
   deleteData(authToken, tableID);
-
   var updateMsg = updateData(authToken, tableID);
-
   var updatedRowsCount = updateMsg.split(/\n/).length - 2;
-
   Browser.msgBox("Fusion Tables Update", "Updated " + updatedRowsCount + " rows in the Fusion Table", Browser.Buttons.OK);  
-
 }
-
-
-
-
-
 function getGAauthenticationToken(email, password) {
-
   password = encodeURIComponent(password);
-
   var response = UrlFetchApp.fetch("https://www.google.com/accounts/ClientLogin", {
-
     method: "post",
-
     payload: "accountType=GOOGLE&Email=" + email + "&Passwd=" + password + "&service=fusiontables&Source=testing"
-
   });
-
   var responseStr = response.getContentText();
-
   responseStr = responseStr.slice(responseStr.search("Auth=") + 5, responseStr.length);
-
   responseStr = responseStr.replace(/\n/g, "");
-
   return responseStr;
-
 }
-
-
-
 function queryFusionTables(authToken, query) {
-
   var URL = "http://www.google.com/fusiontables/api/query";
-
   var response = UrlFetchApp.fetch(URL, {
-
     method: "post",
-
     headers: {
-
       "Authorization": "GoogleLogin auth=" + authToken,
-
     },
-
     payload: "sql=" + query
-
   });
-
   return response.getContentText();
-
 }
-
-
-
 function deleteData(authToken, tableID) {
-
   var query = encodeURIComponent("DELETE FROM " + tableID);
-
   return queryFusionTables(authToken, query);
-
 }
-
-
-
 function updateData(authToken, tableID) {
-
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-
   var blockDataRange = ss.getRangeByName('nonheaders');
-
   var query = constructQuery(ss, blockDataRange, tableID);
-
-  //Browser.msgBox(query);
-
+  Browser.msgBox(query);
   return queryFusionTables(authToken, query);
-
 }
-
-
-
 function constructQuery(ss, range, tableID, columnHeadersRowIndex) {
-
   var sheet = ss.getSheets()[0];
-
   var columnHeadersRowIndex = columnHeadersRowIndex || range.getRowIndex() - 1;
-
   var numColumns = range.getEndColumn() - range.getColumn() + 1;
-
   var headersRange = sheet.getRange(columnHeadersRowIndex, range.getColumn(), 1, numColumns);
-
   var headers = headersRange.getValues()[0];
-
   var data = range.getValues();
-
   var queryPrepend = "INSERT INTO " + tableID + " (" + "\'" +headers.join("\',\'") + "\'" + ") VALUES ('";
-
   var query = "";
-
-
-
   for (var i = 0; i < data.length; ++i) {
-
     var hasData = false;
-
     if (cellEmpty(data[i][0])) {
-
       continue;
-
     }
-
     query += queryPrepend + data[i].join("','") + "'); ";
-
   }
-
   return encodeURIComponent(query);
-
 }
-
-
-
 function cellEmpty(cellData) {
-
   return typeof(cellData) == "string" && cellData == "";
-
 }
-
-
-
 function fixEmail() {
-
    var email = Browser.inputBox('Enter email');
-
    var password = Browser.inputBox('Enter password');
-
    UserProperties.setProperty('email',email);
-
    UserProperties.setProperty('password', password);
-
+}
+function setRange() {
+var ss = SpreadsheetApp.getActiveSpreadsheet();
+ss.setNamedRange("nonheaders", SpreadsheetApp.getActiveRange());
 }
