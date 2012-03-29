@@ -29,7 +29,7 @@ function updateFusion() {
   deleteData(authToken, tableID);
   var updateMsg = updateData(authToken, tableID);
   var updatedRowsCount = updateMsg.split(/\n/).length - 2;
-  Browser.msgBox("Fusion Tables Update", "Updated " + updatedRowsCount + " rows in the Fusion Table", Browser.Buttons.OK);  
+  SpreadsheetApp.getActiveSpreadsheet().toast("Updated " + updatedRowsCount + " rows in the Fusion Table", "Fusion Tables Update", 5) 
 }
 
 //authentication fusion API
@@ -69,7 +69,7 @@ function updateData(authToken, tableID) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var blockDataRange = ss.getRangeByName(rangeName);
   var query = constructQuery(ss, blockDataRange, tableID);
-  //Browser.msgBox(query);
+  Logger.log(query);
   return queryFusionTables(authToken, query);
 }
 
@@ -124,6 +124,6 @@ function setRangeFusion() {
          }
      var range = SpreadsheetApp.getActiveRange()
      ss.setNamedRange(rangeName, range);
-     Browser.msgBox("WARNING", "The range \"" + rangeName + "\" used to send data to Fusion has been changed.", Browser.Buttons.OK);
+     ss.toast("The range \'" + rangeName + "\' used to send data to Fusion has been changed.", "WARNING", 5);
    }
 }
