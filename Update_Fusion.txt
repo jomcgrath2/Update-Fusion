@@ -1,5 +1,7 @@
 var tableID = '2178714' // Add the table ID of the fusion table here
-
+var rangeName = 'updateFusion' //the name of the range used in the program
+    
+    
 //create button
 function onOpen() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -65,7 +67,7 @@ function deleteData(authToken, tableID) {
 //insert new data in fusion table
 function updateData(authToken, tableID) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var blockDataRange = ss.getRangeByName('updateFusion');
+  var blockDataRange = ss.getRangeByName(rangeName);
   var query = constructQuery(ss, blockDataRange, tableID);
   //Browser.msgBox(query);
   return queryFusionTables(authToken, query);
@@ -116,8 +118,12 @@ function setRangeFusion() {
    var decision = Browser.msgBox("WARNING", "Are you sure you want to change the Update Fusion Range?", Browser.Buttons.YES_NO);
    if (decision == 'yes'){
      var ss = SpreadsheetApp.getActiveSpreadsheet();
+     var check = ss.getRangeByName(rangeName)
+         if (check != null) {
+           ss.removeNamedRange(rangeName);
+         }
      var range = SpreadsheetApp.getActiveRange()
-     ss.setNamedRange("updateFusion", range);
-     Browser.msgBox("WARNING", "The range 'updateFusion' used to send data to Fusion has been changed.", Browser.Buttons.OK);
+     ss.setNamedRange(rangeName, range);
+     Browser.msgBox("WARNING", "The range \"" + rangeName + "\" used to send data to Fusion has been changed.", Browser.Buttons.OK);
    }
 }
