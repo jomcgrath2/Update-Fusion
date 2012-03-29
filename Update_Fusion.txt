@@ -1,14 +1,15 @@
 var tableID = '2178714' // Add the table ID of the fusion table here
-var sheetNumber = 1 //Sheet number goes here (the first sheet is number 1 second is number 2 etc.)
 
+//create button
 function onOpen() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var menuEntries = [ {name: "Update Fusion Table", functionName: "updateFusion"}, 
                       {name: "Change Email Information", functionName: "fixEmail"},
-                      {name: "Change Range of Data to be Sent" + "\r\n" + "(RANGE STARTS JUST BELOW HEADERS)", functionName: "setRange"}];
-  ss.addMenu("Fusion Tables", menuEntries);
+                      {name: "Change Range of Data to be Sent" + "\r\n" + "(RANGE STARTS JUST BELOW HEADERS)", functionName: "setRangeFusion"}];
+  ss.addMenu("Update Fusion", menuEntries);
 }
 
+//main function
 function updateFusion() {
   var email = UserProperties.getProperty('email');
   var password = UserProperties.getProperty('password');
@@ -29,7 +30,7 @@ function updateFusion() {
   Browser.msgBox("Fusion Tables Update", "Updated " + updatedRowsCount + " rows in the Fusion Table", Browser.Buttons.OK);  
 }
 
-
+//authentication fusion API
 function getGAauthenticationToken(email, password) {
   password = encodeURIComponent(password);
   var response = UrlFetchApp.fetch("https://www.google.com/accounts/ClientLogin", {
@@ -42,6 +43,7 @@ function getGAauthenticationToken(email, password) {
   return responseStr;
 }
 
+//query fusion API post
 function queryFusionTables(authToken, query) {
   var URL = "http://www.google.com/fusiontables/api/query";
   var response = UrlFetchApp.fetch(URL, {
@@ -54,11 +56,13 @@ function queryFusionTables(authToken, query) {
   return response.getContentText();
 }
 
+//delete old data in fusion table
 function deleteData(authToken, tableID) {
   var query = encodeURIComponent("DELETE FROM " + tableID);
   return queryFusionTables(authToken, query);
 }
 
+//insert new data in fusion table
 function updateData(authToken, tableID) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var blockDataRange = ss.getRangeByName('nonheaders');
@@ -67,8 +71,9 @@ function updateData(authToken, tableID) {
   return queryFusionTables(authToken, query);
 }
 
+//this puts all the current information in the spreadsheet into a query
 function constructQuery(ss, range, tableID, columnHeadersRowIndex) {
-  var sheet = ss.getSheets()[sheetNumber - 1];
+  var sheet = range.getSheet()
   var columnHeadersRowIndex = columnHeadersRowIndex || range.getRowIndex() - 1;
   var numColumns = range.getEndColumn() - range.getColumn() + 1;
   var headersRange = sheet.getRange(columnHeadersRowIndex, range.getColumn(), 1, numColumns);
@@ -108,8 +113,9 @@ function cellEmpty(cellData) {
   return typeof(cellData) == "string" && cellData == "";
 }
 
+//change email if needed
 function fixEmail() {
-   var decision = Browser.msgBox("WARNING", "Are you sure you want to chage your email?", Browser.Buttons.YES_NO);
+   var decision = Browser.msgBox("WARNING", "Are you sure you want to change your email?", Browser.Buttons.YES_NO);
    if (decision == 'yes'){
      var email = Browser.inputBox('Enter email');
      var password = Browser.inputBox('Enter password');
@@ -118,8 +124,9 @@ function fixEmail() {
    }
 }
 
-function setRange() {
-   var decision = Browser.msgBox("WARNING", "Are you sure you want to chage the Update Fusion Range?", Browser.Buttons.YES_NO);
+//set range
+function setRangeFusion() {
+   var decision = Browser.msgBox("WARNING", "Are you sure you want to change the Update Fusion Range?", Browser.Buttons.YES_NO);
    if (decision == 'yes'){
      var ss = SpreadsheetApp.getActiveSpreadsheet();
      var range = SpreadsheetApp.getActiveRange()
