@@ -1,1 +1,14 @@
-This code is a workaround to allow data in a spreadsheet to update a fusion table.  In order to do this the code deletes all the data that was previously in the fusion table then sends all of the data currently in the spreadsheet to the fusion table.  With the newest version it has the capability to take data from multiple sheets and send it across.  These ranges must have the same number of columns as each other but don't necessarily have to have the same column names.  The first range must have column names that match the fusion table exactly.  For all the rest the header row is not used when the query is being generated.  Each spreadsheet saves its own range called fusion and then the name of the spreadsheet without any spaces it it.
+This code is a workaround to allow data in a spreadsheet to update a fusion table.  In order to do this the code deletes all the data that was previously in the fusion table then sends all of the data currently in the spreadsheet to the fusion table.
+
+Implementation Procedure:
+1.  Open the Spreadsheet that the code will be placed in.
+2.  In the toolbar click Tools --> Script Editor.
+4.  If there is already a code in place then a new project should be made for the code that is being implemented.  This should be done by selecting File --> New --> Project.
+5.  Copy the most recent version of the code.
+6.  Paste this version into the Script Editor.
+7.  Change the tableID variable to the table you want to send your data to. This is found in the fusion table by clicking File --> About under the numberic ID.
+8.  Now reload the spreadsheet.  A new heading will be in the toolbar.  Select the bottom option to set the range of data to be sent, include the headers (headers must match the fusion table headers exactly).
+
+A well done guide has been posted here by Chris Keller if any of these procedures are hard to understand. http://www.chrislkeller.com/google-group-user-john-m-posts-script-that-br
+
+There is also a code for multiple sheets to have data sent across.  This code creates alot of named ranges and should therefor only be used by advanced users.  These ranges must have the same number of columns as each other but don't necessarily have to have the same column names.  The range in the earliest sheet that that has a range (ie the one furthest left), must have column names that match the fusion table exactly.  For all the rest the header row is not used when the query is being generated.  Each spreadsheet saves its own range called fusion and then the name of the spreadsheet without any spaces it..
