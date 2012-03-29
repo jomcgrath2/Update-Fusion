@@ -73,20 +73,7 @@ function updateData(authToken, tableID) {
 
 //this puts all the current information in the spreadsheet into a query
 function constructQuery(ss, range, tableID) {
-  var sheet = range.getSheet()
-  var numColumns = range.getEndColumn() - range.getColumn() + 1;
-  var numRows = range.getEndRow() - range.getRow() + 1;
-  var headersRange = sheet.getRange(range.getRow(), range.getColumn(), 1, numColumns);
-  var headers = headersRange.getValues()[0];
-  var dataRange = sheet.getRange(range.getRow() + 1, range.getColumn(), numRows - 1, numColumns);
-  var data = dataRange.getValues();
-  
-  //remove ' from headers
-  for( var i in headers ) {
-    if (isNaN(headers[i])){
-      headers[i] = headers[i].replace(/'/g, "\\'");
-    }
-  }
+  var data = range.getValues();
   
   //remove ' from strings
   for( var i in data ) {
@@ -96,12 +83,11 @@ function constructQuery(ss, range, tableID) {
       }
     }
   }
-  
+  var headers = data[0];
   var queryPrepend = "INSERT INTO " + tableID + " (" + "\'" +headers.join("\',\'") + "\'" + ") VALUES ('";
   var query = "";
 
-  for (var i = 0; i < data.length; ++i) {
-    var hasData = false;
+  for (var i = 1; i < data.length; ++i) {
     if (cellEmpty(data[i][0])) {
       continue;
     }
