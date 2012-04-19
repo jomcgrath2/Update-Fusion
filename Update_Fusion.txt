@@ -1,4 +1,4 @@
-var tableIDFusion = '2178714' // Add the table ID of the fusion table here
+var tableIDFusion = '3462201' // Add the table ID of the fusion table here
 var rangeName = 'updateFusion' //the name of the range used in the program
     
 //create button
@@ -25,9 +25,8 @@ function updateFusion() {
   }
   var authToken = getGAauthenticationToken(email,password); //call getGAauthenticationToken send email and password infomation
   deleteData(authToken, tableIDFusion); //calls delete data sends authToken and tableID
-  var updateMsg = updateData(authToken, tableIDFusion); //call updateData send authentication token and the tableID
-  var updatedRowsCount = updateMsg.split(/\n/).length - 2; //counts the number of rows sent to fusion
-  SpreadsheetApp.getActiveSpreadsheet().toast("Updated " + updatedRowsCount + " rows in the Fusion Table", "Fusion Tables Update", 5) //browserbox confirmation that info has been sent 
+  updateData(authToken, tableIDFusion); //call updateData send authentication token and the tableID
+  SpreadsheetApp.getActiveSpreadsheet().toast(Logger.getLog(), "Fusion Tables Update", 10) //browserbox confirmation that info has been sent 
 }
 
 
@@ -50,15 +49,40 @@ function getGAauthenticationToken(email, password) {
 //query fusion API post
 function queryFusionTables(authToken, query) {
   var URL = "http://www.google.com/fusiontables/api/query"; //location to send the infomation to
-  //sends the the authentication and the query in url format
-  var response = UrlFetchApp.fetch(URL, {
-    method: "post",
-    headers: {
-      "Authorization": "GoogleLogin auth=" + authToken,
-    },
-    payload: "sql=" + query
-  });
-  return response.getContentText();
+  
+  try {
+    //sends the the authentication and the query in url format
+    var response = UrlFetchApp.fetch(URL, {
+      method: "post",
+      headers: {
+        "Authorization": "GoogleLogin auth=" + authToken,
+      },
+      payload: "sql=" + query
+    });
+  } catch(err) {
+    if (err.message.search('401') != -1) {
+      // If the auth failed, get a new token
+      token = getGAauthenticationToken();
+      if (!token) {
+        return -2;
+      }
+      return -1;
+    } else if (err.message.search('500') != -1) {
+      // If there were too many requests being sent, sleep for a bit
+      Utilities.sleep(3000);
+      return -1;
+    } else {
+      if (err.message.search('Bad column reference') != -1) {
+        Logger.log('Column names in sheet do not match column names in the table.');
+      }
+      Logger.log(err.message);
+      return -2;
+    }
+  }
+  
+  
+  response = response.getContentText();
+  return response;
 }
 
 
@@ -76,34 +100,62 @@ function updateData(authToken, tableID) {
   //find sheets with ranges that will be sent
   var ss = SpreadsheetApp.getActiveSpreadsheet();  //gets the active spreadsheet
   var range = ss.getRangeByName(rangeName);
+  var numColumns = range.getNumColumns();
+  var optimalSend = Math.round(7500/numColumns) - 1;
+  var sendNum = Math.min(500,optimalSend);
   var data = range.getValues();
 
-  //format data
+  /*
+  //format date (REMOVE COMMENTS TO ALLOW CODE TO EXECUTE)
   for( var i in data ) {
     for( var j in data[i] ) {
-      //remove ' from strings
-      if (isNaN(data[i][j])){
-        data[i][j] = data[i][j].replace(/'/g, "\\'");
+      if (Object.prototype.toString.call(data[i][j]) === '[object Date]') {
+        data[i][j] = Utilities.formatDate(data[i][j], "GMT", "MM/dd/yyyy HH:mm:ss");
       }
-      //format date (REMOVE COMMENTS TO ALLOW CODE TO EXECUTE)
-      //if (Object.prototype.toString.call(data[i][j]) === '[object Date]') {
-      //  data[i][j] = Utilities.formatDate(data[i][j], "GMT", "MM/dd/yyyy HH:mm:ss");
-      //}
     }
   }
+  */
+
+  //change array to string and remove apostrophe
+  var dataString = Utilities.jsonStringify(data);  //turns the data array into a string
+  dataString = dataString.replace(/'/g, "\\'"); //removes apostrophes from the stings and replaces them with \' which wont break the code
+  data = Utilities.jsonParse(dataString); //turns the data string into an array again
   
   //define headers and prepend and create query
   var headers = data[0]; //defines the headers as the first row in the data array
   var queryPrepend = "INSERT INTO " + tableID + " (" + "\'" +headers.join("\',\'") + "\'" + ") VALUES ('"; //creates the prepend for the query
   var query = ""; //creates the string where the query will be saved
-
+  var count = 0;
+  var updatedRowsCount = 0;
+  var response;
+  
+  
   for (var i = 1; i < data.length; ++i) {
-    if (typeof(data[i][0]) == "string" && data[i][0] == "") {  //if the first column is empty continue will jump to the next i value instead going further
-      continue;
+    if (data[i][0] != "") {  //if the first column is empty continue will jump to the next i value instead going further
+      query += queryPrepend + data[i].join("','") + "'); "; //combines the data with the prepends and adds it to the query string;
+      count++
     }
-    query += queryPrepend + data[i].join("','") + "'); "; //combines the data with the prepends and adds it to the query string
+    
+    if (count == sendNum || i == data.length - 1) {
+      response = queryFusionTables(authToken, encodeURIComponent(query));
+      
+      // If the query failed with a 401 or 500 error, try again one more time.
+      if (response == -1) {
+        response = queryFusionTables(authToken, encodeURIComponent(query));
+      }
+    
+      // If the query failed again, or failed for some other reason, return.
+      if (response == -1 || response == -2) {
+        return;
+      }
+      
+      updatedRowsCount += response.split(/\n/).length - 2;
+      query = "";
+      count = 0;
+    }
   }
-  return queryFusionTables(authToken, encodeURIComponent(query));
+  Logger.log("Updated " + updatedRowsCount + " rows in the Fusion Table");
+  return;
 }
 
 
