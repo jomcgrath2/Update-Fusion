@@ -12,7 +12,3 @@ Implementation Procedure:
 A well done guide has been posted here by Chris Keller if any of these procedures are hard to understand. http://www.chrislkeller.com/google-group-user-john-m-posts-script-that-br
 
 There is also a code for multiple sheets to have data sent across.  This code creates alot of named ranges and should therefor only be used by advanced users.  These ranges must have the same number of columns as each other but don't necessarily have to have the same column names.  The range in the earliest sheet that that has a range (ie the one furthest left), must have column names that match the fusion table exactly.  For all the rest the header row is not used when the query is being generated.  Each spreadsheet saves its own range called fusion and then the name of the spreadsheet without any spaces it.
-
-Limitaions:
-Has to be less than 500 rows sent.
-Has to be less than 10,000 cells sent.
