@@ -1,3 +1,10 @@
+I've tried to update this script to implement OAuth instead of the now deprecated Clientlogin. I've got it working partially, but there are two issues I can't quite figure out:
+
+ 	1. The script will only display the authorization request only if it is run via the Script Editor. Running the script in a Google Spreadsheet simply hangs.
+
+ 	2. It seems to timeout if the Spreadsheet data is over 100 rows (2 columns). 
+
+
 This code is a workaround to allow data in a spreadsheet to update a fusion table.  In order to do this the code deletes all the data that was previously in the fusion table then sends all of the data currently in the selected range to the fusion table.
 
 Implementation Procedure:
